@@ -1,17 +1,11 @@
 import { initTRPC } from '@trpc/server';
 import { z } from 'zod';
-import type { SnapshotPayload, WSResponse, RecordedAction } from './types';
+import type { SnapshotPayload, WSResponse, RecordedAction, TabInfo, OwnedTabsEntry } from './types';
 
 const t = initTRPC.create({
   isServer: false,
   allowOutsideOfServer: true,
 });
-
-export interface TabInfo {
-  id: number;
-  title: string;
-  url: string;
-}
 
 export interface BackgroundState {
   wsUrl: string;
@@ -31,6 +25,7 @@ export interface BackgroundHandlers {
   sendClick: (selector: string) => Promise<WSResponse>;
   sendSnapshot: (payload: SnapshotPayload) => Promise<WSResponse>;
   listTabs: () => Promise<TabInfo[]>;
+  listOwnedTabs: () => Promise<OwnedTabsEntry[]>;
   setTargetTab: (tabId: number | null) => void;
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<void>;
@@ -42,6 +37,7 @@ export function createBackgroundRouter(handlers: BackgroundHandlers) {
   return t.router({
     getState: t.procedure.query(() => handlers.getState()),
     listTabs: t.procedure.query(() => handlers.listTabs()),
+    listOwnedTabs: t.procedure.query(() => handlers.listOwnedTabs()),
     startRecording: t.procedure.mutation(async () => {
       await handlers.startRecording();
       return { ok: true };

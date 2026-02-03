@@ -3,6 +3,9 @@
 This extension connects your local MCP server to the browser via WebSocket and exposes
 browser actions to an LLM through the MCP tool pipeline.
 
+Repository: https://github.com/adityalohuni/surfing-bros-extension  
+Parent: https://github.com/adityalohuni/surfing-bros
+
 ## How It Works
 
 - **Background** keeps a WebSocket connection to the MCP server (`ws://localhost:9099/ws`).
@@ -21,8 +24,18 @@ pnpm dev
 Then:
 
 1. Start the MCP server (Go).
-2. Open the extension popup → **Open MCP Console**.
+2. Open the extension side panel to access SurfingBro.
 3. Click **Connect** and choose a tab target if needed.
+
+## Requirements
+
+- Node.js 18+ and `pnpm`
+- Chrome/Chromium
+
+## UI Pages
+
+- Sidepanel: main chat UI (sessions, context, model selection)
+- MCP Console: debug/status page (`mcp.html`)
 
 ## Actions Supported
 

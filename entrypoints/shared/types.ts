@@ -14,11 +14,19 @@ export type WSCommandType =
   | 'screenshot'
   | 'start_recording'
   | 'stop_recording'
-  | 'get_recording';
+  | 'get_recording'
+  | 'list_tabs'
+  | 'open_tab'
+  | 'close_tab'
+  | 'claim_tab'
+  | 'release_tab'
+  | 'set_tab_sharing';
 
 export interface WSCommand {
   id: string;
   type: WSCommandType;
+  sessionId?: string;
+  tabId?: number;
   payload?: unknown;
 }
 
@@ -36,6 +44,42 @@ export interface RecordedAction {
   timestamp: number;
   url: string;
   title: string;
+}
+
+export interface TabInfo {
+  id: number;
+  title: string;
+  url: string;
+}
+
+export interface OwnedTabsEntry {
+  sessionId: string;
+  tabs: TabInfo[];
+}
+
+export interface OpenTabPayload {
+  url?: string;
+  active?: boolean;
+  pinned?: boolean;
+}
+
+export interface CloseTabPayload {
+  tabId: number;
+}
+
+export interface ClaimTabPayload {
+  tabId: number;
+  mode?: 'exclusive' | 'shared';
+  requireActive?: boolean;
+}
+
+export interface ReleaseTabPayload {
+  tabId: number;
+}
+
+export interface SetTabSharingPayload {
+  tabId: number;
+  allowShared: boolean;
 }
 
 export interface RecordingStateResponse {

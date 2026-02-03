@@ -1,4 +1,5 @@
 import { createChromeHandler } from 'trpc-browser/adapter';
+import { browser, defineContentScript } from '#imports';
 
 import { contentRouter } from './shared/contentRouter';
 
@@ -6,15 +7,25 @@ let recordingEnabled = false;
 let scrollTimer: number | null = null;
 let lastScrollY = 0;
 const inputTimers = new WeakMap<HTMLElement, number>();
+const chromeApi = (globalThis.chrome ?? (browser as unknown as typeof chrome));
 
 export default defineContentScript({
   matches: ['*://*/*'],
   main() {
-    createChromeHandler({
-      router: contentRouter,
-    });
+    try {
+      createChromeHandler({
+        router: contentRouter,
+        chrome: chromeApi,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (!message.includes('not implemented')) {
+        throw err;
+      }
+      console.warn('Skipping chrome handler creation: runtime onConnect not implemented');
+    }
 
-    chrome.runtime.onMessage.addListener((message) => {
+    chromeApi.runtime.onMessage.addListener((message) => {
       if (message?.type === 'recording:set') {
         recordingEnabled = !!message.enabled;
       }
@@ -82,7 +93,7 @@ export default defineContentScript({
 });
 
 function recordAction(type: string, payload: any) {
-  chrome.runtime.sendMessage({
+  chromeApi.runtime.sendMessage({
     type: 'record_event',
     payload: {
       type,
