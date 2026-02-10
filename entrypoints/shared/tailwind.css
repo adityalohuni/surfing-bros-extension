@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,7 +7,7 @@
 @layer base {
   :root {
     color-scheme: light;
-    font-family: "Space Grotesk", "Fira Sans", system-ui, sans-serif;
+    font-family: "Plus Jakarta Sans", "Space Grotesk", system-ui, sans-serif;
   }
 
   :root[data-theme="dark"] {
@@ -14,12 +16,12 @@
 
   body {
     @apply text-ui-text;
-    background: linear-gradient(180deg, #fbfbfc 0%, #f7f7f8 100%);
+    background: radial-gradient(circle at top left, #f8fafc 0%, #f5f7fb 45%, #eef2f6 100%);
   }
 
   :root[data-theme="dark"] body {
     @apply text-ui-textDark;
-    background: linear-gradient(180deg, #14151a 0%, #101114 100%);
+    background: radial-gradient(circle at top left, #1b1f26 0%, #12151b 45%, #0c0f14 100%);
   }
 
   input,
@@ -123,8 +125,20 @@
     @apply border-white/10 bg-mist-900 text-ui-textDark;
   }
 
+  .brand-icon {
+    @apply inline-flex rounded-full border border-brand-200 bg-brand-50 p-1;
+    width: 28px;
+    height: 28px;
+    object-fit: cover;
+  }
+
+  :root[data-theme="dark"] .brand-icon {
+    @apply border-brand-700 bg-brand-900/70;
+  }
+
   .chat {
     @apply grid gap-2 min-h-0 overflow-auto;
+    justify-items: start;
   }
 
   .chat-empty {
@@ -132,11 +146,13 @@
   }
 
   .bubble {
-    @apply rounded-xl p-3 border border-black/10 bg-white/95;
+    @apply rounded-xl p-3 border border-black/10 bg-white/95 inline-flex w-fit max-w-[75%] h-fit;
+    justify-self: start;
   }
 
   .bubble.user {
-    @apply bg-ink-900 text-white;
+    @apply bg-brand-900 text-white;
+    justify-self: end;
   }
 
   .bubble.system {
@@ -187,7 +203,24 @@
   }
 
   :root[data-theme="dark"] .bubble.user {
-    @apply bg-white text-ink-900;
+    @apply bg-brand-700 text-white;
+  }
+
+  .message {
+    @apply text-sm leading-relaxed text-ui-text w-fit max-w-[80%] whitespace-pre-wrap;
+    justify-self: start;
+  }
+
+  :root[data-theme="dark"] .message {
+    @apply text-ui-textDark;
+  }
+
+  .system-line {
+    @apply text-xs text-ui-muted italic;
+  }
+
+  :root[data-theme="dark"] .system-line {
+    @apply text-ui-mutedDark;
   }
 
   :root[data-theme="dark"] .bubble.system {

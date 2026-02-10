@@ -8,18 +8,26 @@ module.exports = {
       fontFamily: {
         display: ['"Space Grotesk"', '"Fira Sans"', 'system-ui', 'sans-serif'],
       },
-      colors: {
-        mist: {
-          50: '#f7f7f8',
-          100: '#efeff1',
-          200: '#e2e2e6',
-          800: '#202125',
-          900: '#131417',
-        },
-        ink: {
-          900: '#0f1115',
-          700: '#2a2d34',
-        },
+        colors: {
+          mist: {
+            50: '#f7f7f8',
+            100: '#efeff1',
+            200: '#e2e2e6',
+            800: '#202125',
+            900: '#131417',
+          },
+          brand: {
+            50: '#f3f6f8',
+            100: '#e6ecf0',
+            200: '#cfd9e0',
+            500: '#7d909c',
+            700: '#4b5f6b',
+            900: '#22303a',
+          },
+          ink: {
+            900: '#0f1115',
+            700: '#2a2d34',
+          },
         ui: {
           text: '#0f172a',
           muted: '#475569',
