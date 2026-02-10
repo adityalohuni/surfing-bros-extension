@@ -1,5 +1,7 @@
 # SurfingBro Extension (MCP Bridge)
 
+![SurfingBro icon](./assets/icon.png)
+
 This extension connects your local MCP server to the browser via WebSocket and exposes
 browser actions to an LLM through the MCP tool pipeline.
 
