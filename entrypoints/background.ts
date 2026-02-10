@@ -43,6 +43,7 @@ let lastSnapshot: SnapshotData | null = null;
 let targetTabId: number | null = null;
 let recording = false;
 let recordedActions: RecordedAction[] = [];
+const LOCAL_SESSION_ID = 'sidepanel-local';
 const tabOwners = new Map<number, TabOwnership>();
 const sessionTabs = new Map<string, Set<number>>();
 
@@ -134,6 +135,93 @@ function allowTabAccess(tabId: number, sessionId: string): boolean {
   const ownership = tabOwners.get(tabId);
   if (!ownership) return false;
   return ownership.owners.has(sessionId);
+}
+
+async function getLocalTabId(tabIdOverride?: number | null): Promise<number | null> {
+  const tabId = await getActiveTabId(tabIdOverride);
+  if (!tabId) return null;
+  if (!allowTabAccess(tabId, LOCAL_SESSION_ID)) {
+    ensureOwner(tabId, LOCAL_SESSION_ID, 'exclusive');
+  }
+  return tabId;
+}
+
+async function handleClickLocal(payload: ClickPayload): Promise<WSResponse> {
+  const tabId = await getLocalTabId();
+  if (!tabId) return { id: '', ok: false, error: 'No active tab available', errorCode: 'NO_ACTIVE_TAB' };
+  return handleClick(payload, tabId, LOCAL_SESSION_ID);
+}
+
+async function handleSnapshotLocal(payload: SnapshotPayload): Promise<WSResponse> {
+  const tabId = await getLocalTabId();
+  if (!tabId) return { id: '', ok: false, error: 'No active tab available', errorCode: 'NO_ACTIVE_TAB' };
+  return handleSnapshot(payload, tabId, LOCAL_SESSION_ID);
+}
+
+async function handleNavigateLocal(payload: NavigatePayload): Promise<WSResponse> {
+  const tabId = await getLocalTabId();
+  if (!tabId) return { id: '', ok: false, error: 'No active tab available', errorCode: 'NO_ACTIVE_TAB' };
+  return handleNavigate(payload, tabId, LOCAL_SESSION_ID);
+}
+
+async function handleTypeLocal(payload: TypePayload): Promise<WSResponse> {
+  const tabId = await getLocalTabId();
+  if (!tabId) return { id: '', ok: false, error: 'No active tab available', errorCode: 'NO_ACTIVE_TAB' };
+  return handleType(payload, tabId, LOCAL_SESSION_ID);
+}
+
+async function handleEnterLocal(payload: EnterPayload): Promise<WSResponse> {
+  const tabId = await getLocalTabId();
+  if (!tabId) return { id: '', ok: false, error: 'No active tab available', errorCode: 'NO_ACTIVE_TAB' };
+  return handleEnter(payload, tabId, LOCAL_SESSION_ID);
+}
+
+async function handleSelectLocal(payload: SelectPayload): Promise<WSResponse> {
+  const tabId = await getLocalTabId();
+  if (!tabId) return { id: '', ok: false, error: 'No active tab available', errorCode: 'NO_ACTIVE_TAB' };
+  return handleSelect(payload, tabId, LOCAL_SESSION_ID);
+}
+
+async function handleScrollLocal(payload: ScrollPayload): Promise<WSResponse> {
+  const tabId = await getLocalTabId();
+  if (!tabId) return { id: '', ok: false, error: 'No active tab available', errorCode: 'NO_ACTIVE_TAB' };
+  return handleScroll(payload, tabId, LOCAL_SESSION_ID);
+}
+
+async function handleWaitForSelectorLocal(payload: WaitForSelectorPayload): Promise<WSResponse> {
+  const tabId = await getLocalTabId();
+  if (!tabId) return { id: '', ok: false, error: 'No active tab available', errorCode: 'NO_ACTIVE_TAB' };
+  return handleWaitForSelector(payload, tabId, LOCAL_SESSION_ID);
+}
+
+async function handleFindLocal(payload: FindPayload): Promise<WSResponse> {
+  const tabId = await getLocalTabId();
+  if (!tabId) return { id: '', ok: false, error: 'No active tab available', errorCode: 'NO_ACTIVE_TAB' };
+  return handleFind(payload, tabId, LOCAL_SESSION_ID);
+}
+
+async function handleHoverLocal(payload: HoverPayload): Promise<WSResponse> {
+  const tabId = await getLocalTabId();
+  if (!tabId) return { id: '', ok: false, error: 'No active tab available', errorCode: 'NO_ACTIVE_TAB' };
+  return handleHover(payload, tabId, LOCAL_SESSION_ID);
+}
+
+async function handleBackLocal(): Promise<WSResponse> {
+  const tabId = await getLocalTabId();
+  if (!tabId) return { id: '', ok: false, error: 'No active tab available', errorCode: 'NO_ACTIVE_TAB' };
+  return handleBack(tabId, LOCAL_SESSION_ID);
+}
+
+async function handleForwardLocal(): Promise<WSResponse> {
+  const tabId = await getLocalTabId();
+  if (!tabId) return { id: '', ok: false, error: 'No active tab available', errorCode: 'NO_ACTIVE_TAB' };
+  return handleForward(tabId, LOCAL_SESSION_ID);
+}
+
+async function handleScreenshotLocal(payload: ScreenshotPayload): Promise<WSResponse> {
+  const tabId = await getLocalTabId();
+  if (!tabId) return { id: '', ok: false, error: 'No active tab available', errorCode: 'NO_ACTIVE_TAB' };
+  return handleScreenshot(payload, tabId, LOCAL_SESSION_ID);
 }
 
 function addSessionTab(sessionId: string, tabId: number) {
@@ -798,8 +886,19 @@ const router = createBackgroundRouter({
   }),
   connect,
   disconnect,
-  sendClick: (selector) => handleClick({ selector }),
-  sendSnapshot: (payload) => handleSnapshot(payload),
+  sendClick: (selector) => handleClickLocal({ selector }),
+  sendSnapshot: (payload) => handleSnapshotLocal(payload),
+  sendNavigate: (url) => handleNavigateLocal({ url }),
+  sendType: (payload) => handleTypeLocal(payload),
+  sendEnter: (payload) => handleEnterLocal(payload),
+  sendSelect: (payload) => handleSelectLocal(payload),
+  sendScroll: (payload) => handleScrollLocal(payload),
+  sendWaitForSelector: (payload) => handleWaitForSelectorLocal(payload),
+  sendFind: (payload) => handleFindLocal(payload),
+  sendHover: (payload) => handleHoverLocal(payload),
+  sendBack: () => handleBackLocal(),
+  sendForward: () => handleForwardLocal(),
+  sendScreenshot: (payload) => handleScreenshotLocal(payload),
   listTabs: () => listTabs(),
   listOwnedTabs: () => listOwnedTabs(),
   setTargetTab: (tabId) => {
