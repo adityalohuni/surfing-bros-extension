@@ -44,6 +44,7 @@ let targetTabId: number | null = null;
 let recording = false;
 let recordedActions: RecordedAction[] = [];
 const LOCAL_SESSION_ID = 'sidepanel-local';
+const REMOTE_DEFAULT_SESSION_ID = 'mcp-remote-default';
 const tabOwners = new Map<number, TabOwnership>();
 const sessionTabs = new Map<string, Set<number>>();
 
@@ -64,6 +65,22 @@ async function getActiveTabId(preferredTabId?: number | null): Promise<number | 
   const tabs = await chromeApi.tabs.query({ active: true, lastFocusedWindow: true });
   const tab = tabs.find(t => t.id != null && !t.url?.startsWith('chrome://') && !t.url?.startsWith('chrome-extension://'));
   return tab?.id ?? null;
+}
+
+function getOwnedTabId(sessionId?: string | null): number | null {
+  if (!sessionId) return null;
+  const set = sessionTabs.get(sessionId);
+  if (!set?.size) return null;
+  for (const tabId of set) {
+    if (allowTabAccess(tabId, sessionId)) return tabId;
+  }
+  return null;
+}
+
+async function getActionTabId(tabIdOverride?: number | null, sessionId?: string | null): Promise<number | null> {
+  const active = await getActiveTabId(tabIdOverride);
+  if (active != null) return active;
+  return getOwnedTabId(sessionId);
 }
 
 async function listTabs() {
@@ -250,10 +267,8 @@ function releaseSession(sessionId: string) {
 
 function requireSession(cmd: WSCommand): string | null {
   const sessionId = (cmd as any).sessionId as string | undefined;
-  if (!sessionId || !sessionId.trim()) {
-    return null;
-  }
-  return sessionId;
+  if (sessionId && sessionId.trim()) return sessionId.trim();
+  return REMOTE_DEFAULT_SESSION_ID;
 }
 
 function makeContentClient(tabId: number) {
@@ -350,7 +365,7 @@ async function handleWaitForSelector(payload: WaitForSelectorPayload, tabIdOverr
 }
 
 async function handleNavigate(payload: NavigatePayload, tabIdOverride?: number | null, sessionId?: string | null): Promise<WSResponse> {
-  const tabId = await getActiveTabId(tabIdOverride);
+  const tabId = await getActionTabId(tabIdOverride, sessionId);
   if (!tabId) {
     return { id: '', ok: false, error: 'No active tab available', errorCode: 'NO_ACTIVE_TAB' };
   }
@@ -697,10 +712,14 @@ async function handleClaimTab(payload: ClaimTabPayload, sessionId: string | null
   }
   if (ownership && !ownership.owners.has(sessionId)) {
     if (mode === 'exclusive') {
-      return { id: '', ok: false, error: 'Tab owned by another session', errorCode: 'TAB_NOT_OWNED' };
-    }
-    if (!ownership.allowShared) {
-      return { id: '', ok: false, error: 'Tab not shareable', errorCode: 'TAB_NOT_SHAREABLE' };
+      const currentOwners = [...ownership.owners];
+      for (const owner of currentOwners) {
+        releaseOwner(tab.id, owner);
+      }
+    } else {
+      if (!ownership.allowShared) {
+        return { id: '', ok: false, error: 'Tab not shareable', errorCode: 'TAB_NOT_SHAREABLE' };
+      }
     }
   }
   if (mode === 'shared' && ownership) {
@@ -856,7 +875,8 @@ function connect(url: string) {
     try {
       const cmd = JSON.parse(event.data) as WSCommand;
       if (cmd?.id && cmd?.type) {
-        if (cmd.sessionId) sessionIds.add(cmd.sessionId);
+        const sessionId = requireSession(cmd);
+        if (sessionId) sessionIds.add(sessionId);
         void handleCommand(cmd);
       }
     } catch (err: any) {

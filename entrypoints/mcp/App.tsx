@@ -43,10 +43,28 @@ function useBackgroundClient() {
   }, []);
 }
 
+const deriveMcpStreamUrl = (input: string): string => {
+  const fallback = 'http://127.0.0.1:9099/mcp/stream';
+  try {
+    const url = new URL(input);
+    if (url.protocol === 'ws:') url.protocol = 'http:';
+    if (url.protocol === 'wss:') url.protocol = 'https:';
+    url.pathname = '/mcp/stream';
+    url.search = '';
+    url.hash = '';
+    return url.toString();
+  } catch {
+    return fallback;
+  }
+};
+
 export default function App() {
   const client = useBackgroundClient();
-  const brandIconUrl = browser.runtime.getURL('icons/128.png');
+  const brandIconUrl = browser.runtime.getURL('/icons/128.png');
   const [wsUrl, setWsUrl] = useState('ws://localhost:9099/ws');
+  const [mcpStreamUrl, setMcpStreamUrl] = useState('http://127.0.0.1:9099/mcp/stream');
+  const [mcpToken, setMcpToken] = useState('');
+  const [mcpClientName, setMcpClientName] = useState('surfingbro-sidepanel');
   const [state, setState] = useState<any>(null);
   const [recording, setRecording] = useState(false);
   const [recordingCount, setRecordingCount] = useState(0);
@@ -107,7 +125,14 @@ export default function App() {
   };
 
   const loadTemplates = async () => {
-    const stored = await storage.getItem<{ templates?: PromptTemplate[]; defaultPromptId?: string; theme?: 'light' | 'dark' | 'system' }>(`local:${STORAGE_KEY}`);
+    const stored = await storage.getItem<{
+      templates?: PromptTemplate[];
+      defaultPromptId?: string;
+      theme?: 'light' | 'dark' | 'system';
+      mcpStreamUrl?: string;
+      mcpToken?: string;
+      mcpClientName?: string;
+    }>(`local:${STORAGE_KEY}`);
     const nextTemplates = stored?.templates?.length ? stored.templates : [defaultTemplate()];
     setTemplates(nextTemplates);
     const resolvedDefault =
@@ -116,6 +141,9 @@ export default function App() {
         : nextTemplates[0]?.id ?? DEFAULT_PROMPT_ID;
     setDefaultPromptId(resolvedDefault);
     if (stored?.theme) setTheme(stored.theme);
+    setMcpStreamUrl(stored?.mcpStreamUrl || deriveMcpStreamUrl(wsUrl));
+    setMcpToken(stored?.mcpToken || '');
+    setMcpClientName(stored?.mcpClientName || 'surfingbro-sidepanel');
   };
 
   const saveTemplates = async (nextTemplates: PromptTemplate[], nextDefaultId: string) => {
@@ -135,10 +163,27 @@ export default function App() {
     });
   };
 
+  const saveMcpSettings = async (settings: {
+    mcpStreamUrl: string;
+    mcpToken: string;
+    mcpClientName: string;
+  }) => {
+    const stored = (await storage.getItem<Record<string, unknown>>(`local:${STORAGE_KEY}`)) ?? {};
+    await storage.setItem(`local:${STORAGE_KEY}`, {
+      ...stored,
+      mcpStreamUrl: settings.mcpStreamUrl,
+      mcpToken: settings.mcpToken,
+      mcpClientName: settings.mcpClientName,
+    });
+  };
+
   const refresh = async () => {
     const data = await client.getState.query();
     setState(data);
-    if (data?.wsUrl) setWsUrl(data.wsUrl);
+    if (data?.wsUrl) {
+      setWsUrl(data.wsUrl);
+      setMcpStreamUrl((prev) => (prev ? prev : deriveMcpStreamUrl(data.wsUrl)));
+    }
     if (typeof data?.recording === 'boolean') setRecording(data.recording);
     if (typeof data?.recordingCount === 'number') setRecordingCount(data.recordingCount);
   };
@@ -153,9 +198,14 @@ export default function App() {
     void loadTemplates();
   }, []);
 
+  useEffect(() => {
+    void saveMcpSettings({ mcpStreamUrl, mcpToken, mcpClientName });
+  }, [mcpStreamUrl, mcpToken, mcpClientName]);
+
   useThemeSync({ storageKey: STORAGE_KEY, theme, setTheme });
 
   const connect = async () => {
+    await saveMcpSettings({ mcpStreamUrl, mcpToken, mcpClientName });
     await client.connect.mutate({ url: wsUrl });
     await refresh();
   };
@@ -254,7 +304,13 @@ export default function App() {
       <div className="grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
         <ConnectionCard
           wsUrl={wsUrl}
+          mcpStreamUrl={mcpStreamUrl}
+          mcpToken={mcpToken}
+          mcpClientName={mcpClientName}
           onUrlChange={setWsUrl}
+          onMcpStreamUrlChange={setMcpStreamUrl}
+          onMcpTokenChange={setMcpToken}
+          onMcpClientNameChange={setMcpClientName}
           onConnect={connect}
           onDisconnect={disconnect}
           lastError={state?.lastError}

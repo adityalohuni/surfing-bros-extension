@@ -6,7 +6,7 @@ import { useSidepanel } from '../state/SidepanelContext';
 
 export function SidepanelHeader() {
   const { actions } = useSidepanel();
-  const brandIconUrl = browser.runtime.getURL('icons/128.png');
+  const brandIconUrl = browser.runtime.getURL('/icons/128.png');
 
   return (
     <Card className="p-3 flex items-center justify-between gap-3">

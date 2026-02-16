@@ -4,7 +4,13 @@ import { Card } from '../../shared/components/ui/Card';
 
 type ConnectionCardProps = {
   wsUrl: string;
+  mcpStreamUrl: string;
+  mcpToken: string;
+  mcpClientName: string;
   onUrlChange: (next: string) => void;
+  onMcpStreamUrlChange: (next: string) => void;
+  onMcpTokenChange: (next: string) => void;
+  onMcpClientNameChange: (next: string) => void;
   onConnect: () => void;
   onDisconnect: () => void;
   lastError?: string | null;
@@ -12,7 +18,13 @@ type ConnectionCardProps = {
 
 export function ConnectionCard({
   wsUrl,
+  mcpStreamUrl,
+  mcpToken,
+  mcpClientName,
   onUrlChange,
+  onMcpStreamUrlChange,
+  onMcpTokenChange,
+  onMcpClientNameChange,
   onConnect,
   onDisconnect,
   lastError,
@@ -20,9 +32,26 @@ export function ConnectionCard({
   return (
     <Card className="grid gap-3">
       <h2>Connection</h2>
-      <p className="muted">Connect the in-browser client to your MCP server over WebSocket.</p>
+      <p className="muted">WebSocket bridge + MCP stream settings used by sidepanel and console.</p>
+      <div className="grid gap-2">
+        <label className="grid gap-1">
+          <span className="muted">WebSocket URL</span>
+          <input value={wsUrl} onChange={(e) => onUrlChange(e.target.value)} className="min-w-[280px]" />
+        </label>
+        <label className="grid gap-1">
+          <span className="muted">MCP Stream URL</span>
+          <input value={mcpStreamUrl} onChange={(e) => onMcpStreamUrlChange(e.target.value)} className="min-w-[280px]" />
+        </label>
+        <label className="grid gap-1">
+          <span className="muted">MCP Token</span>
+          <input value={mcpToken} onChange={(e) => onMcpTokenChange(e.target.value)} className="min-w-[280px]" placeholder="Bearer token from mcpd config.toml" />
+        </label>
+        <label className="grid gap-1">
+          <span className="muted">MCP Client Name</span>
+          <input value={mcpClientName} onChange={(e) => onMcpClientNameChange(e.target.value)} className="min-w-[280px]" />
+        </label>
+      </div>
       <div className="row">
-        <input value={wsUrl} onChange={(e) => onUrlChange(e.target.value)} className="min-w-[280px]" />
         <Button onClick={onConnect} className="row">
           <PlugZap size={16} />
           Connect
